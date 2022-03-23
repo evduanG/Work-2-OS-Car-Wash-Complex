@@ -1,6 +1,6 @@
 import java.util.Scanner;
 
-public class CarWashComplex {
+public class CarWashComplex implements CarWashListener  {
 	public static Scanner sc= new Scanner(System.in);
 	
 	// Variables 
@@ -15,9 +15,6 @@ public class CarWashComplex {
 	public Station stations2;
 	public Station stations3;
 
-	public static EvenListener eListener ;
-
-	
 	
 	public static void main(String[] args) {
 		CarWashComplex comp = new CarWashComplex();
@@ -32,7 +29,7 @@ public class CarWashComplex {
 		// for loop 
 		for (int i = 0; i < comp.cars.length; i++) {
 			 comp.cars[i].start();
-			 //sleep(comp.AT_forS1);
+			 sleep(comp.AT_forS1);
 		}
 		join();
 		
@@ -56,7 +53,11 @@ public class CarWashComplex {
 		//car arr
 		this.cars = new Car [numCar];
 		for (int i = 0; i < cars.length; i++) {
-			cars[i]= new Car ();
+			this.cars[i]=  new Car( r.nextInt(10), r.nextInt(10), i  );
+			//add this class as listener for work complete event
+			this.cars[i].addListener(this);
+			//start each worker
+			
 		}
 		
 		// stations
@@ -83,5 +84,16 @@ public class CarWashComplex {
 		}
 		return ans;
 	}
-	
+	@Override
+	public void printProgressMessage(CarWashEvent event) {
+			// TODO Auto-generated method stub
+		int id = event.getId();
+		this.cars[id].smp.release();
+		System.out.println( event.getMessage() );
+		}	
+	}
 }
+
+
+
+

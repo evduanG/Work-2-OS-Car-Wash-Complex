@@ -1,25 +1,28 @@
 import java.util.concurrent.Semaphore;
-
 import javax.swing.event.EventListenerList;
 
-public class Car extends Thread{
+public class Car implements Runnable{
 	
+	public static Semaphore SmpFinishS3 =new Semaphore(0);
 	private long time ;
-
-	public Semaphore smp;
+	private long delayCar;
 	
+	private STAGE_WHSH stag;
 	
-	EventListenerList list;
+	private final String carName;
+	private EventListenerList list;
 	private double whit1;
 	private double whit2;
 	private double whit3;
 
 	private int id;
 	
-	public Car(int x, int y, int id) {
+	public Car(int id, long aT_forWosh) {
 		this.id = id;
+		this.carName =new String ("car #" +id);
+		this.stag=STAGE_WHSH.Created;
 		this.list = new EventListenerList();
-		this.smp=new Semaphore(0);
+		this.delayCar=aT_forWosh;
 	}
 	//add listener to list
 	public void addListener(CarWashListener listener)
@@ -31,20 +34,23 @@ public class Car extends Thread{
 	{
 		this.list.remove(CarWashListener.class, listener);
 	}
-	//do some job and send the results to listeners
-	public void run() {
-		try {
-			this.smp.acquire();
-			alertListenerList("car #"+this.id+" 1 ");
-			this.smp.acquire();
-			alertListenerList("car #"+this.id+" 2 ");
 
-		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+	public void run() {
+		if (this.stag == STAGE_WHSH.Created) {
+			alertListenerList(this.carName);
+		}else {
+			alertListenerList(this.carName);
+			if (this.stag != STAGE_WHSH.InStation3) {
+				delay(delayCar);
+			}
+			alertListenerList(this.carName);
 		}
-		
 	}
+	private static void delay(long ms){
+		try { Thread.sleep(ms);}
+		catch (InterruptedException e) {}
+	}
+
 	public void alertListenerList(String msg) {
 		CarWashEvent event = new CarWashEvent(this);
 		event.setId(this.id);
@@ -52,28 +58,64 @@ public class Car extends Thread{
 		//for each listener type send the event
 		for ( CarWashListener e: list.getListeners(CarWashListener.class) )
 		{
-			e.printProgressMessage(event);
+			e.actionListener(event);
 		}
 
 	}
-	public double getWhit1() {
-		return whit1;
+	
+	public synchronized STAGE_WHSH getStag() {
+		return stag;
 	}
-	public void setWhit1(double whit1) {
-		this.whit1 = whit1;
+	public synchronized void setStag(STAGE_WHSH stag) {
+		this.stag = stag;
 	}
-	public double getWhit2() {
-		return whit2;
+	
+	/**
+	 * @return the current enum stag as a string 
+	 */
+	public synchronized String getStagStr() {
+		String s =null;
+		switch (this.stag) {
+		case Created :
+			s="Created";
+			break;
+		case InQueueStation1 :
+			s="InQueueStation1";
+			break;
+		case InStation1 :
+			s="InStation1";
+			break;	
+		case InQueueStation2 :
+			s="InQueueStation2";
+			break;
+		case InStation2 :
+			s="InStation2";
+			break;
+		case InStation3 :
+			s="InStation3";
+			break;
+		case finished :
+			s="finished";
+			break;
+		}
+		return s;
 	}
-	public void setWhit2(double whit2) {
-		this.whit2 = whit2;
+	
+	// time 
+	/**
+	 * calculus the diff form the car time to the current time and swap to current time
+	 * @param currentTime
+	 * @return
+	 */
+	public synchronized long carWaitingTime(long currentTime) {
+		long WaitTime = currentTime-this.time;
+		this.time=currentTime;
+		return WaitTime;
 	}
-	public double getWhit3() {
-		return whit3;
+	public long getTime() {
+		return time;
 	}
-	public void setWhit3(double whit3) {
-		this.whit3 = whit3;
+	public void setTime(long time) {
+		this.time = time;
 	}
-		
-
 }
